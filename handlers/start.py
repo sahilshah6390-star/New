@@ -2,7 +2,7 @@
 
 import asyncio
 from pyrogram import filters
-from pyrogram.enums import ChatAction, ChatMemberStatus
+from pyrogram.enums import ChatAction, ChatMemberStatus, ParseMode
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from app.client import app
@@ -30,11 +30,19 @@ async def is_joined(client, user_id: int) -> bool:
         gp = await client.get_chat_member(FORCE_GROUP, user_id)
 
         return (
-            ch.status in (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER)
+            ch.status in (
+                ChatMemberStatus.MEMBER,
+                ChatMemberStatus.ADMINISTRATOR,
+                ChatMemberStatus.OWNER
+            )
             and
-            gp.status in (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER)
+            gp.status in (
+                ChatMemberStatus.MEMBER,
+                ChatMemberStatus.ADMINISTRATOR,
+                ChatMemberStatus.OWNER
+            )
         )
-    except:
+    except Exception:
         return False
 
 
@@ -54,6 +62,7 @@ def home_kb():
 
 @app.on_message(filters.command("start") & filters.private)
 async def start_cmd(client, message):
+    # track user in DB
     track_user(message.from_user)
 
     chat_id = message.chat.id
@@ -62,20 +71,22 @@ async def start_cmd(client, message):
     await client.send_chat_action(chat_id, ChatAction.TYPING)
     await asyncio.sleep(0.5)
 
+    # force join check
     if not await is_joined(client, message.from_user.id):
         await message.reply_photo(
-            FORCE_PIC,
+            photo=FORCE_PIC,
             caption="⚠️ <b>Please join channel & group to continue</b>",
             reply_markup=force_kb(),
-            parse_mode="html"
+            parse_mode=ParseMode.HTML
         )
         return
 
+    # main start UI
     await message.reply_photo(
-        START_PIC,
+        photo=START_PIC,
         caption=START_MSG.format(mention=mention),
         reply_markup=home_kb(),
-        parse_mode="html"
+        parse_mode=ParseMode.HTML
     )
 
 
